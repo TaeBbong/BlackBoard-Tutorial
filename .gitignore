@@ -1,0 +1,7 @@
+chromedriver
+
+venv/
+
+config.py
+
+__pychache__
