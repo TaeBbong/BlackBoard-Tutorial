@@ -1,10 +1,18 @@
-from config import blackboard_id, blackboard_pw, mysql_pw
+from config import blackboard_id, blackboard_pw, mysql_pw, get_gmail_pw, get_gmail_id, get_target_mail
 from selenium import webdriver
 from bs4 import BeautifulSoup as bs
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import pymysql
+import smtplib
+from email.mime.text import MIMEText
+
+# Init Mail Service
+smtp = smtplib.SMTP('smtp.gmail.com', 587)
+smtp.ehlo()
+smtp.starttls()
+smtp.login(get_gmail_id(), get_gmail_pw())
 
 conn = pymysql.connect(host='localhost', user='root', password=mysql_pw(), db='bb', charset='utf8')
 curs = conn.cursor()
@@ -67,7 +75,10 @@ for i in course_detail_list:
                 sql_ann = 'insert into announcement values(\"' + ann.attrs['id'] + '\")'
                 curs.execute(sql_ann)
                 conn.commit()
-                print(ann.text)
+                msg = MIMEText(ann.text)
+                msg['Subject'] = 'Announcement for ' + i[0].split('&course_id=')[1]
+                msg['To'] = get_target_mail()
+                smtp.sendmail(get_gmail_id(), get_target_mail(), msg.as_string())
 
         # 과제란이 있으면 가져오기, 없으면 에러발생 -> except
         homework_html = driver.find_element_by_xpath('//*[@id="courseMenuPalette_contents"]').get_attribute('innerHTML')
@@ -86,10 +97,15 @@ for i in course_detail_list:
                         sql_home = 'insert into homework values(\"' + home.attrs['id'] + '\")'
                         curs.execute(sql_home)
                         conn.commit()
-                        print(home.text)
+                        msg = MIMEText(home.text)
+                        msg['Subject'] = 'Homework for ' + i[0].split('&course_id=')[1]
+                        msg['To'] = get_target_mail()
+                        smtp.sendmail(get_gmail_id(), get_target_mail(), msg.as_string())
                 break
 
     except Exception as e:
         homework_html = None
         print(e)
         pass
+
+    smtp.quit()
