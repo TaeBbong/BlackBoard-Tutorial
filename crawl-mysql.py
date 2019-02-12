@@ -1,9 +1,28 @@
-from config import blackboard_id, blackboard_pw
+from config import blackboard_id, blackboard_pw, mysql_pw
 from selenium import webdriver
 from bs4 import BeautifulSoup as bs
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import pymysql
+
+conn = pymysql.connect(host='localhost', user='root', password=mysql_pw(), db='bb', charset='utf8')
+curs = conn.cursor()
+
+announce_db = []
+homework_db = []
+
+sql = "select * from announcement"
+curs.execute(sql)
+rows = curs.fetchall()
+for a in rows:
+    announce_db.append(a[0])
+
+sql = "select * from homework"
+curs.execute(sql)
+rows = curs.fetchall()
+for h in rows:
+    homework_db.append(h[0])
 
 driver = webdriver.Chrome('/Users/TaeBbong/Projects/BlackBoard-Tutorial/chromedriver')
 driver.implicitly_wait(3)
@@ -47,6 +66,10 @@ for i in course_detail_list:
             print(ann.attrs['id'])
             print(ann.text)
             print('---------------')
+            if ann.attrs['id'] not in announce_db:
+                sql_ann = 'insert into announcement values(\"' + ann.attrs['id'] + '\")'
+                curs.execute(sql_ann)
+                conn.commit()
 
         # 과제란이 있으면 가져오기, 없으면 에러발생 -> except
         homework_html = driver.find_element_by_xpath('//*[@id="courseMenuPalette_contents"]').get_attribute('innerHTML')
@@ -64,6 +87,10 @@ for i in course_detail_list:
                     print(home.attrs['id'])
                     print(home.text)
                     print('---------------')
+                    if home.attrs['id'] not in homework_db:
+                        sql_home = 'insert into homework values(\"' + home.attrs['id'] + '\")'
+                        curs.execute(sql_home)
+                        conn.commit()
 
     except Exception as e:
         homework_html = None

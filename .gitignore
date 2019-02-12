@@ -5,3 +5,7 @@ venv/
 config.py
 
 __pychache__
+
+.idea/
+
+.xml
